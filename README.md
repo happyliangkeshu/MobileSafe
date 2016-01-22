@@ -1,0 +1,2 @@
+# MobileSafe
+android,MobileSafe
