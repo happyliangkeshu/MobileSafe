@@ -39,6 +39,7 @@ public class AddressService extends Service {
 	
 	private WindowManager.LayoutParams params;
 	private SharedPreferences sp;
+	private String tag = "AddressService";
 	@Override
 	public IBinder onBind(Intent arg0) {
 		
@@ -68,7 +69,7 @@ public class AddressService extends Service {
 		public void onReceive(Context context, Intent arg1) {
 			String number = getResultData();
 			String address = NumberAddressQueryDao.getAddress(number);
-			myToast(address);
+			showMyToast(address);
 		}
 	}
 	/**
@@ -78,106 +79,31 @@ public class AddressService extends Service {
 	 */
 	public void myToast(String address) {
 		view = View.inflate(this, R.layout.show_address, null);
-		TextView textview = (TextView) view.findViewById(R.id.tv_address);
-		view.setOnClickListener(new OnClickListener() {
-			@Override
-			public void onClick(View v) {
-//				System.arraycopy(mHits, 1, mHits, 0, mHits.length - 1);
-//				mHits[mHits.length - 1] = SystemClock.uptimeMillis();
-//				if (mHits[0] >= (SystemClock.uptimeMillis() - 500)) {
-//					// 双击居中了。。。
-//					params.x = wm.getDefaultDisplay().getWidth()/2-view.getWidth()/2;
-//					wm.updateViewLayout(view, params);
-//					Editor editor = sp.edit();
-//					editor.putInt("lastx", params.x);
-//					editor.commit();
-//				}
-			}
-		});
-
-		// 给view对象设置一个触摸的监听器
-		view.setOnTouchListener(new OnTouchListener() {
-			// 定义手指的初始化位置
-			int startX;
-			int startY;
-
-			@Override
-			public boolean onTouch(View v, MotionEvent event) {
-				switch (event.getAction()) {
-				case MotionEvent.ACTION_DOWN:// 手指按下屏幕
-					startX = (int) event.getRawX();
-					startY = (int) event.getRawY();
-					Log.i(TAG, "手指摸到控件");
-					break;
-				case MotionEvent.ACTION_MOVE:// 手指在屏幕上移动
-					int newX = (int) event.getRawX();
-					int newY = (int) event.getRawY();
-					int dx = newX - startX;
-					int dy = newY - startY;
-					Log.i(TAG, "手指在控件上移动");
-					params.x += dx;
-					params.y += dy;
-					// 考虑边界问题
-					if (params.x < 0) {
-						params.x = 0;
-					}
-					if (params.y < 0) {
-						params.y = 0;
-					}
-					if (params.x > (wm.getDefaultDisplay().getWidth() - view
-							.getWidth())) {
-						params.x = (wm.getDefaultDisplay().getWidth() - view
-								.getWidth());
-					}
-					if (params.y > (wm.getDefaultDisplay().getHeight() - view
-							.getHeight())) {
-						params.y = (wm.getDefaultDisplay().getHeight() - view
-								.getHeight());
-					}
-					wm.updateViewLayout(view, params);
-					// 重新初始化手指的开始结束位置。
-					startX = (int) event.getRawX();
-					startY = (int) event.getRawY();
-					break;
-				case MotionEvent.ACTION_UP:// 手指离开屏幕一瞬间
-					// 记录控件距离屏幕左上角的坐标
-					Log.i(TAG, "手指离开控件");
-					Editor editor = sp.edit();
-					editor.putInt("lastx", params.x);
-					editor.putInt("lasty", params.y);
-					editor.commit();
-					break;
-				}
-				return false;// 事件处理完毕了。不要让父控件 父布局响应触摸事件了。
-			}
-		});
-
+		TextView tv_address = (TextView) view.findViewById(R.id.tv_address);
 		// "半透明","活力橙","卫士蓝","金属灰","苹果绿"
 		int[] ids = { R.drawable.call_locate_white,
 				R.drawable.call_locate_orange, R.drawable.call_locate_blue,
-				R.drawable.call_locate_gray, R.drawable.call_locate_green };
-		
-		
-		
+				R.drawable.call_locate_gray, R.drawable.call_locate_green };	
 		view.setBackgroundResource(ids[sp.getInt("which", 0)]);
-		textview.setText(address);
+		tv_address.setText(address);
+
 		// 窗体的参数就设置好了
 		params = new WindowManager.LayoutParams();
-
-		params.height = WindowManager.LayoutParams.WRAP_CONTENT;
-		params.width = WindowManager.LayoutParams.WRAP_CONTENT;
 		// 与窗体左上角对其
 		params.gravity = Gravity.TOP + Gravity.LEFT;
 		// 指定窗体距离左边100 上边100个像素
-		params.x = sp.getInt("lastx", 0);
-		params.y = sp.getInt("lasty", 0);
+		params.x = sp.getInt("lastX", 0);
+		params.y = sp.getInt("lastY", 0);
+
+		params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+		params.width = WindowManager.LayoutParams.WRAP_CONTENT;
 		params.flags = WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE
 				| WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
 		params.format = PixelFormat.TRANSLUCENT;
 		// android系统里面具有电话优先级的一种窗体类型，记得添加权限。
-		params.type = WindowManager.LayoutParams.TYPE_PRIORITY_PHONE;
+		params.type = WindowManager.LayoutParams.TYPE_TOAST;
 		wm.addView(view, params);
-
+//		Log.e(tag, "view4 到这里了吗");
 	}
 
 	
@@ -187,7 +113,7 @@ public class AddressService extends Service {
 			switch (state) {
 			case TelephonyManager.CALL_STATE_RINGING:
 				String address = NumberAddressQueryDao.getAddress(incomingNumber);
-				myToast(address);
+				showMyToast(address);
 				break;
 			case TelephonyManager.CALL_STATE_IDLE:
 				// 把这个View移除
@@ -202,10 +128,105 @@ public class AddressService extends Service {
 		}
 		
 	}
+	
+	public void showMyToast(String address) {
+		int which = sp.getInt("which", 0);
+		// "半透明","活力橙","卫士蓝","金属灰","苹果绿"
+		int[] bgs = { R.drawable.call_locate_white,
+				R.drawable.call_locate_orange, R.drawable.call_locate_blue,
+				R.drawable.call_locate_gray, R.drawable.call_locate_green };
+		// 直接利用窗体管理器 添加一个view对象到整个手机系统的窗体上
+		view = View.inflate(this, R.layout.show_address, null);
+		view.setOnTouchListener(new OnTouchListener() {
+			int startX;
+			int startY;
+
+			@Override
+			public boolean onTouch(View v, MotionEvent event) {
+				switch (event.getAction()) {
+				case MotionEvent.ACTION_DOWN:
+					// 1. 记录第一次按下
+					startX = (int) event.getRawX();
+					startY = (int) event.getRawY();
+					Log.e(tag, "按下");
+					break;
+				case MotionEvent.ACTION_MOVE:
+					Log.e(tag, "移动");
+					// 2. 来到新的坐标
+					int newX = (int) event.getRawX();
+					int newY = (int) event.getRawY();
+					// 3. 计算偏移量
+					int dx = newX - startX;
+					int dy = newY - startY;
+					
+					// 4. 根据偏移量，更新控件的信息
+					params.x += dx;
+					params.y += dy;
+					if(params.x < 0){
+						params.x = 0;
+					}
+					if(params.y < 0){
+						params.y = 0;
+					}
+					if(params.x > wm.getDefaultDisplay().getWidth()-view.getWidth()){
+						params.x  = wm.getDefaultDisplay().getWidth()-view.getWidth();
+					}
+					if(params.y > wm.getDefaultDisplay().getHeight()-view.getHeight()){
+						params.y  = wm.getDefaultDisplay().getHeight()-view.getHeight();
+					}
+					
+					wm.updateViewLayout(view, params);
+					//重新记录开始坐标
+					startX = (int) event.getRawX();
+					startY = (int) event.getRawY();
+					break;
+				case MotionEvent.ACTION_UP:
+					Log.e(tag, "离开");
+					Editor editor = sp.edit();
+					editor.putInt("lastX", params.x);
+					editor.putInt("lastY", params.y);
+					editor.commit();
+					break;
+				}
+				return true;
+			}
+		});
+		view.setBackgroundResource(bgs[which]);
+		TextView tv = (TextView) view.findViewById(R.id.tv_address);
+		tv.setText(address);
+		Log.e(tag, "111111111111");
+		params = new WindowManager.LayoutParams();
+		params.gravity = Gravity.TOP + Gravity.LEFT;
+		params.x = sp.getInt("lastX", 0);
+		params.y = sp.getInt("lastY", 0);
+		params.height = WindowManager.LayoutParams.WRAP_CONTENT;
+		params.width = WindowManager.LayoutParams.WRAP_CONTENT;
+		params.flags =WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+				WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
+//				WindowManager.LayoutParams.FLAG_NOT_TOUCHABLE |
+				
+		params.format = PixelFormat.TRANSLUCENT;
+		// 窗体的类型。
+		params.type = WindowManager.LayoutParams.TYPE_PRIORITY_PHONE;
+		Log.e(tag, "2222222222");
+		wm.addView(view, params);
+		Log.e(tag, "3333333333");
+		/*new Thread(){
+			public void run() {
+				try {
+					Thread.sleep(5000);
+				} catch (InterruptedException e) {
+					e.printStackTrace();
+				}
+				wm.removeView(view);
+			};
+		}.start();*/
+	}
+
 	@Override
 	public void onDestroy() {
 		
-		super.onDestroy();
+//		super.onDestroy();
 		tm.listen(listener, PhoneStateListener.LISTEN_NONE);
 		listener = null;
 		// 取消注册监听去电

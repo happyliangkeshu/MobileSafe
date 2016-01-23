@@ -22,6 +22,7 @@ public class SMSReceiver extends BroadcastReceiver {
 	private DevicePolicyManager dpm;
 	@Override
 	public void onReceive(Context context, Intent intent) {
+		System.out.println("功能清单文件里边注册的广播");
 		sp = context.getSharedPreferences("config", Context.MODE_PRIVATE);
 		dpm = (DevicePolicyManager) context.getSystemService(Context.DEVICE_POLICY_SERVICE);
 		Object[] pdus = (Object [])intent.getExtras().get("pdus");

@@ -20,7 +20,7 @@
  	    android:id="@+id/siv"
     	android:layout_width="match_parent"
     	android:layout_height="wrap_content" 
-    	trees:title="设置自动更新啊"
+    	trees:title="设置自动更新"
     	trees:update_off="自动更新已经关闭"
     	trees:update_on="自动更新已经开启"
      />
@@ -42,4 +42,12 @@
  	     android:layout_height="wrap_content"
  	     android:id="@+id/scv_changeposition"
  	     />
+ 	 <com.trees.mobilesafe.view.SettingItemView
+ 	    android:id="@+id/siv_blacknumber"
+    	android:layout_width="match_parent"
+    	android:layout_height="wrap_content" 
+    	trees:title="设置黑名单拦截"
+    	trees:update_off="黑名单拦截已经关闭"
+    	trees:update_on="黑名单拦截已经开启"
+     />
 </LinearLayout>
