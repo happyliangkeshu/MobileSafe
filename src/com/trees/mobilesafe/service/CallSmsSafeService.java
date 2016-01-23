@@ -1,12 +1,19 @@
 package com.trees.mobilesafe.service;
 
+import java.lang.reflect.Method;
+
+import com.android.internal.telephony.ITelephony;
 import com.trees.mobilesafe.db.dao.BlackNumberDao;
 
 import android.app.Service;
 import android.content.BroadcastReceiver;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.database.ContentObserver;
+import android.net.Uri;
+import android.os.Handler;
 import android.os.IBinder;
 import android.telephony.PhoneStateListener;
 import android.telephony.SmsManager;
@@ -88,8 +95,11 @@ public class CallSmsSafeService extends Service {
 				if(dao.query(incomingNumber)){
 					String mode = dao.queryMode(incomingNumber);
 					if("0".equals(mode) || "2".equals(mode)){
-						endCall();
-						
+						endCall();// 电话被挂断了，生成通话记录是异步的
+//						deleteCallLog(incomingNumber);
+						// 观察数据变化后，再去删除
+						Uri uri = Uri.parse("content://call_log/calls");
+						getContentResolver().registerContentObserver(uri, true, new MyContentObserver(new Handler(), incomingNumber));
 					}
 				}
 				
@@ -99,6 +109,24 @@ public class CallSmsSafeService extends Service {
 				break;
 			}
 			
+		}
+	}
+	
+	// 内容观察者 
+	private class MyContentObserver extends ContentObserver{
+
+		private  String incomingNumber;
+		public MyContentObserver(Handler handler, String incomingNumber) {
+			super(handler);
+			this.incomingNumber = incomingNumber;
+		}
+		@Override
+		public void onChange(boolean selfChange) {
+			super.onChange(selfChange);
+			// 
+			deleteCallLog(incomingNumber);
+			// 取消注册内容观察者
+			getContentResolver().unregisterContentObserver(this);
 		}
 	}
 	@Override
@@ -115,9 +143,38 @@ public class CallSmsSafeService extends Service {
 		
 	}
 	
-	
-	public void endCall() {
+	// 删除呼叫记录
+	public void deleteCallLog(String incomingNumber) {
+		ContentResolver cr = getContentResolver();
+		Uri uri = Uri.parse("content://call_log/calls");
+		cr.delete(uri, "number=?", new String[]{incomingNumber});
 		
+	}
+
+
+	public void endCall() {
+//		IBinder b = ServiceManager.getService()
+		//用反射得到ServiceManager的实例
+//		1.得到字节码
+		try {
+			Class clazz = CallSmsSafeService.class.getClassLoader().loadClass("android.os.ServiceManager");
+//			2.得到对应的方法getservice
+			Method method = clazz.getMethod("getService", String.class);
+//			3.得到实例  静态方法 不需要实例
+//			4.执行这个方法
+			IBinder b = (IBinder) method.invoke(null, TELEPHONY_SERVICE);
+//			以上四步就是反射的过程
+//			5.拷贝.aidl文件	
+//			6.生成Java代码
+			ITelephony service = ITelephony.Stub.asInterface(b);
+//			7.执行Java中的endCall
+			service.endCall();
+			// 接下来要删除呼叫记录
+		} catch (Exception e) {
+			
+			e.printStackTrace();
+		}
+
 		
 	}
 
